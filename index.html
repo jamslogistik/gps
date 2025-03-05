@@ -3,27 +3,48 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pengirim GPS</title>
+    <title>Pengirim GPS ke Firebase</title>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js"></script>
 </head>
 <body>
-    <h2>Kirim Lokasi HP ke Web Tracking</h2>
+    <h2>Pengirim GPS ke Firebase</h2>
     <p>Latitude: <span id="lat">-</span></p>
     <p>Longitude: <span id="lon">-</span></p>
     <p>Status: <span id="status">Menunggu...</span></p>
 
     <script>
+        // Konfigurasi Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyAm7UYqJxVQE-66N7iw5fF0bwLnV9WHrV8",
+            authDomain: "gps-tracking-46fc6.firebaseapp.com",
+            databaseURL: "https://gps-tracking-46fc6-default-rtdb.firebaseio.com",
+            projectId: "gps-tracking-46fc6",
+            storageBucket: "gps-tracking-46fc6.appspot.com",
+            messagingSenderId:  "623400729396",
+            appId: "1:623400729396:web:2e225550227e1fa1148361"
+        };
+
+        // Inisialisasi Firebase
+        const app = firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+
         function sendLocation() {
             if (navigator.geolocation) {
                 navigator.geolocation.watchPosition(position => {
                     let lat = position.coords.latitude;
                     let lon = position.coords.longitude;
+                    
                     document.getElementById("lat").textContent = lat;
                     document.getElementById("lon").textContent = lon;
-                    document.getElementById("status").textContent = "Mengirim lokasi...";
-                    
-                    // Kirim data ke Web Tracking (gantilah URL dengan Web Tracking kamu)
-                    let trackingURL = "https://jamslogistik.github.io/vsms/index.html";
-                    window.location.href = `${trackingURL}?lat=${lat}&lon=${lon}`;
+                    document.getElementById("status").textContent = "Mengirim lokasi ke Firebase...";
+
+                    // Kirim data ke Firebase
+                    database.ref("gpsData").set({
+                        latitude: lat,
+                        longitude: lon,
+                        timestamp: Date.now()
+                    });
                 }, error => {
                     document.getElementById("status").textContent = "Gagal mendapatkan lokasi!";
                     console.error("Gagal mendapatkan lokasi:", error.message);
