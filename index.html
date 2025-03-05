@@ -5,46 +5,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Realtime GPS Tracking</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            max-width: 600px;
-            margin: 20px auto;
-            padding: 20px;
-            text-align: center;
-        }
-        
-        #status {
-            margin: 20px 0;
-            padding: 15px;
-            border-radius: 5px;
-        }
-        
-        .loading {
-            background-color: #e0f0ff;
-            color: #004085;
-        }
-        
-        .success {
-            background-color: #d4edda;
-            color: #155724;
-        }
-        
-        .error {
-            background-color: #f8d7da;
-            color: #721c24;
-        }
+        /* ... (CSS tetap sama) ... */
     </style>
 </head>
 <body>
     <h1>Realtime GPS Tracker</h1>
     <div id="status">Menginisialisasi...</div>
+    <button onclick="getLocation()">Coba Ambil Lokasi Lagi</button>
 
-    <!-- Tambahkan SDK Firebase -->
+    <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
 
     <script>
-        // Konfigurasi Firebase Anda
         const firebaseConfig = {
             apiKey: "AIzaSyAm7UYqJxVQE-66N7iw5fF0bwLnV9WHrV8",
             authDomain: "gps-tracking-46fc6.firebaseapp.com",
@@ -54,57 +27,87 @@
             appId: "1:623400729396:web:2e225550227e1fa1148361"
         };
 
-        // Inisialisasi Firebase
         const app = firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
-
-        // Referensi database
         const locationsRef = database.ref('locations');
 
-        // Fungsi update status
         function updateStatus(message, className) {
             const statusDiv = document.getElementById('status');
             statusDiv.textContent = message;
             statusDiv.className = className;
+            console.log(message); // Tambahkan logging
         }
 
-        // Ambil lokasi pengguna
         function getLocation() {
-            updateStatus("Mengambil lokasi...", "loading");
+            updateStatus("Meminta izin lokasi...", "loading");
             
-            if (navigator.geolocation) {
-                const watchId = navigator.geolocation.watchPosition(
-                    (position) => {
-                        const lat = position.coords.latitude;
-                        const lng = position.coords.longitude;
-                        const timestamp = new Date().toISOString();
+            if (!navigator.geolocation) {
+                updateStatus("Browser tidak mendukung geolokasi", "error");
+                return;
+            }
 
-                        // Kirim data ke Firebase
-                        locationsRef.push({
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    updateStatus("Izin diberikan, mulai melacak...", "success");
+                    startTracking();
+                },
+                (error) => {
+                    let errorMessage = "Error izin lokasi: ";
+                    switch(error.code) {
+                        case error.PERMISSION_DENIED:
+                            errorMessage += "Pengguna menolak permintaan";
+                            break;
+                        case error.POSITION_UNAVAILABLE:
+                            errorMessage += "Informasi lokasi tidak tersedia";
+                            break;
+                        case error.TIMEOUT:
+                            errorMessage += "Permintaan waktu habis";
+                            break;
+                        default:
+                            errorMessage += "Error tidak diketahui";
+                    }
+                    updateStatus(errorMessage, "error");
+                },
+                {
+                    enableHighAccuracy: true,
+                    timeout: 5000,
+                    maximumAge: 0
+                }
+            );
+        }
+
+        function startTracking() {
+            const watchId = navigator.geolocation.watchPosition(
+                async (position) => {
+                    const lat = position.coords.latitude;
+                    const lng = position.coords.longitude;
+                    const timestamp = new Date().toISOString();
+
+                    try {
+                        await locationsRef.push({
                             latitude: lat,
                             longitude: lng,
-                            timestamp: timestamp
-                        }).then(() => {
-                            updateStatus(`Lokasi terkirim: ${lat}, ${lng}`, "success");
-                        }).catch((error) => {
-                            updateStatus(`Error mengirim data: ${error}`, "error");
+                            timestamp: timestamp,
+                            accuracy: position.coords.accuracy
                         });
-                    },
-                    (error) => {
-                        updateStatus(`Error geolokasi: ${error.message}`, "error");
-                    },
-                    {
-                        enableHighAccuracy: true,
-                        maximumAge: 30000,
-                        timeout: 27000
+                        updateStatus(`Lokasi terkirim: ${lat.toFixed(5)}, ${lng.toFixed(5)} (±${position.coords.accuracy}m)`, "success");
+                    } catch (error) {
+                        console.error('Firebase Error:', error);
+                        updateStatus(`Gagal mengirim: ${error.message}`, "error");
                     }
-                );
-            } else {
-                updateStatus("Geolokasi tidak didukung oleh browser ini", "error");
-            }
+                },
+                (error) => {
+                    console.error('Geolocation Error:', error);
+                    updateStatus(`Error tracking: ${error.message}`, "error");
+                },
+                {
+                    enableHighAccuracy: true,
+                    maximumAge: 3000,
+                    timeout: 5000
+                }
+            );
         }
 
-        // Mulai saat halaman dimuat
         window.onload = getLocation;
     </script>
 </body>
