@@ -66,75 +66,93 @@
             console.log(message); // Tambahkan logging
         }
 
-        function getLocation() {
-            updateStatus("Meminta izin lokasi...", "loading");
-            
-            if (!navigator.geolocation) {
-                updateStatus("Browser tidak mendukung geolokasi", "error");
-                return;
+     function getLocation() {
+    updateStatus("Meminta izin lokasi...", "loading");
+
+    if (!navigator.geolocation) {
+        updateStatus("Browser tidak mendukung geolokasi", "error");
+        return;
+    }
+
+    // Opsi Geolocation
+    const geoOptions = {
+        enableHighAccuracy: true, // Gunakan GPS jika tersedia
+        timeout: 10000,           // Timeout 10 detik
+        maximumAge: 0             // Jangan gunakan cache lokasi lama
+    };
+
+    navigator.geolocation.getCurrentPosition(
+        (position) => {
+            updateStatus("Izin diberikan, mulai melacak...", "success");
+            startTracking();
+        },
+        (error) => {
+            let errorMessage = "Error izin lokasi: ";
+            switch (error.code) {
+                case error.PERMISSION_DENIED:
+                    errorMessage += "Pengguna menolak permintaan";
+                    break;
+                case error.POSITION_UNAVAILABLE:
+                    errorMessage += "Informasi lokasi tidak tersedia";
+                    break;
+                case error.TIMEOUT:
+                    errorMessage += "Timeout: Tidak dapat menemukan lokasi dalam waktu yang ditentukan";
+                    break;
+                default:
+                    errorMessage += "Error tidak diketahui";
             }
+            updateStatus(errorMessage, "error");
+        },
+        geoOptions
+    );
+}
 
-            navigator.geolocation.getCurrentPosition(
-                (position) => {
-                    updateStatus("Izin diberikan, mulai melacak...", "success");
-                    startTracking();
-                },
-                (error) => {
-                    let errorMessage = "Error izin lokasi: ";
-                    switch(error.code) {
-                        case error.PERMISSION_DENIED:
-                            errorMessage += "Pengguna menolak permintaan";
-                            break;
-                        case error.POSITION_UNAVAILABLE:
-                            errorMessage += "Informasi lokasi tidak tersedia";
-                            break;
-                        case error.TIMEOUT:
-                            errorMessage += "Permintaan waktu habis";
-                            break;
-                        default:
-                            errorMessage += "Error tidak diketahui";
-                    }
-                    updateStatus(errorMessage, "error");
-                },
-                {
-                    enableHighAccuracy: true,
-                    timeout: 5000,
-                    maximumAge: 0
-                }
-            );
-        }
+function startTracking() {
+    const geoOptions = {
+        enableHighAccuracy: true, // Gunakan GPS
+        timeout: 10000,           // Timeout 10 detik
+        maximumAge: 3000          // Gunakan cache lokasi yang berumur maksimal 3 detik
+    };
 
-        function startTracking() {
-            const watchId = navigator.geolocation.watchPosition(
-                async (position) => {
-                    const lat = position.coords.latitude;
-                    const lng = position.coords.longitude;
-                    const timestamp = new Date().toISOString();
+    const watchId = navigator.geolocation.watchPosition(
+        async (position) => {
+            const lat = position.coords.latitude;
+            const lng = position.coords.longitude;
+            const timestamp = new Date().toISOString();
 
-                    try {
-                        await locationsRef.push({
-                            latitude: lat,
-                            longitude: lng,
-                            timestamp: timestamp,
-                            accuracy: position.coords.accuracy
-                        });
-                        updateStatus(`Lokasi terkirim: ${lat.toFixed(5)}, ${lng.toFixed(5)} (±${position.coords.accuracy}m)`, "success");
-                    } catch (error) {
-                        console.error('Firebase Error:', error);
-                        updateStatus(`Gagal mengirim: ${error.message}`, "error");
-                    }
-                },
-                (error) => {
-                    console.error('Geolocation Error:', error);
-                    updateStatus(`Error tracking: ${error.message}`, "error");
-                },
-                {
-                    enableHighAccuracy: true,
-                    maximumAge: 3000,
-                    timeout: 5000
-                }
-            );
-        }
+            try {
+                await locationsRef.push({
+                    latitude: lat,
+                    longitude: lng,
+                    timestamp: timestamp,
+                    accuracy: position.coords.accuracy
+                });
+                updateStatus(`Lokasi terkirim: ${lat.toFixed(5)}, ${lng.toFixed(5)} (±${position.coords.accuracy}m)`, "success");
+            } catch (error) {
+                console.error('Firebase Error:', error);
+                updateStatus(`Gagal mengirim: ${error.message}`, "error");
+            }
+        },
+        (error) => {
+            let errorMessage = "Error tracking: ";
+            switch (error.code) {
+                case error.PERMISSION_DENIED:
+                    errorMessage += "Izin lokasi ditolak";
+                    break;
+                case error.POSITION_UNAVAILABLE:
+                    errorMessage += "Lokasi tidak tersedia";
+                    break;
+                case error.TIMEOUT:
+                    errorMessage += "Timeout: Tidak dapat menemukan lokasi dalam waktu yang ditentukan";
+                    break;
+                default:
+                    errorMessage += "Error tidak diketahui";
+            }
+            updateStatus(errorMessage, "error");
+        },
+        geoOptions
+    );
+}
 
         window.onload = getLocation;
     </script>
