@@ -9,13 +9,13 @@
 </head>
 <body>
     <h2>Pengirim GPS ke Firebase</h2>
-    <p>Latitude: <span id="lat">-</span></p>
-    <p>Longitude: <span id="lon">-</span></p>
-    <p>Status: <span id="status">Menunggu...</span></p>
+    <p>Latitude: <span id="lat">Menunggu...</span></p>
+    <p>Longitude: <span id="lon">Menunggu...</span></p>
+    <p>Status: <span id="status">Menunggu izin lokasi...</span></p>
 
     <script>
-        // Konfigurasi Firebase
-        const firebaseConfig = {
+        // Konfigurasi Firebase (Ganti dengan milik Anda)
+         const firebaseConfig = {
             apiKey: "AIzaSyAm7UYqJxVQE-66N7iw5fF0bwLnV9WHrV8",
             authDomain: "gps-tracking-46fc6.firebaseapp.com",
             databaseURL: "https://gps-tracking-46fc6-default-rtdb.firebaseio.com",
@@ -26,34 +26,36 @@
         };
 
         // Inisialisasi Firebase
-        const app = firebase.initializeApp(firebaseConfig);
+        firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
 
         function sendLocation() {
-            if (navigator.geolocation) {
-                navigator.geolocation.watchPosition(position => {
-                    let lat = position.coords.latitude;
-                    let lon = position.coords.longitude;
-                    
-                    document.getElementById("lat").textContent = lat;
-                    document.getElementById("lon").textContent = lon;
-                    document.getElementById("status").textContent = "Mengirim lokasi ke Firebase...";
-
-                    // Kirim data ke Firebase
-                    database.ref("gpsData").set({
-                        latitude: lat,
-                        longitude: lon,
-                        timestamp: Date.now()
-                    });
-                }, error => {
-                    document.getElementById("status").textContent = "Gagal mendapatkan lokasi!";
-                    console.error("Gagal mendapatkan lokasi:", error.message);
-                }, { enableHighAccuracy: true });
-            } else {
-                alert("Geolocation tidak didukung di perangkat ini.");
+            if (!navigator.geolocation) {
+                document.getElementById("status").textContent = "Geolocation tidak didukung di perangkat ini.";
+                return;
             }
+
+            navigator.geolocation.watchPosition(position => {
+                let lat = position.coords.latitude;
+                let lon = position.coords.longitude;
+
+                document.getElementById("lat").textContent = lat;
+                document.getElementById("lon").textContent = lon;
+                document.getElementById("status").textContent = "Lokasi diperbarui & dikirim ke Firebase.";
+
+                // Kirim data ke Firebase
+                database.ref("gpsData").set({
+                    latitude: lat,
+                    longitude: lon,
+                    timestamp: Date.now()
+                });
+            }, error => {
+                document.getElementById("status").textContent = "Gagal mendapatkan lokasi! Periksa izin.";
+                console.error("Gagal mendapatkan lokasi:", error.message);
+            }, { enableHighAccuracy: true });
         }
 
+        // Panggil fungsi untuk mulai mengambil lokasi
         sendLocation();
     </script>
 </body>
