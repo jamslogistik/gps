@@ -3,24 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Live GPS Tracking</title>
+    <title>Pengirim GPS</title>
 </head>
 <body>
-    <h2>Lokasi HP Anda:</h2>
+    <h2>Kirim Lokasi HP ke Web Tracking</h2>
     <p>Latitude: <span id="lat">-</span></p>
     <p>Longitude: <span id="lon">-</span></p>
-    <p>Akurasi: <span id="accuracy">-</span> meter</p>
-    <p>Kecepatan: <span id="speed">-</span> m/s</p>
+    <p>Status: <span id="status">Menunggu...</span></p>
 
     <script>
-        function updateLocation() {
+        function sendLocation() {
             if (navigator.geolocation) {
                 navigator.geolocation.watchPosition(position => {
-                    document.getElementById("lat").textContent = position.coords.latitude;
-                    document.getElementById("lon").textContent = position.coords.longitude;
-                    document.getElementById("accuracy").textContent = position.coords.accuracy;
-                    document.getElementById("speed").textContent = position.coords.speed || 0;
+                    let lat = position.coords.latitude;
+                    let lon = position.coords.longitude;
+                    document.getElementById("lat").textContent = lat;
+                    document.getElementById("lon").textContent = lon;
+                    document.getElementById("status").textContent = "Mengirim lokasi...";
+                    
+                    // Kirim data ke Web Tracking (gantilah URL dengan Web Tracking kamu)
+                    let trackingURL = "https://yourusername.github.io/web-tracking/index.html";
+                    window.location.href = `${trackingURL}?lat=${lat}&lon=${lon}`;
                 }, error => {
+                    document.getElementById("status").textContent = "Gagal mendapatkan lokasi!";
                     console.error("Gagal mendapatkan lokasi:", error.message);
                 }, { enableHighAccuracy: true });
             } else {
@@ -28,7 +33,7 @@
             }
         }
 
-        updateLocation();
+        sendLocation();
     </script>
 </body>
 </html>
