@@ -1,62 +1,111 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pengirim GPS ke Firebase</title>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js"></script>
+    <title>Realtime GPS Tracking</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 20px auto;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        #status {
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 5px;
+        }
+        
+        .loading {
+            background-color: #e0f0ff;
+            color: #004085;
+        }
+        
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+    </style>
 </head>
 <body>
-    <h2>Pengirim GPS ke Firebase</h2>
-    <p>Latitude: <span id="lat">Menunggu...</span></p>
-    <p>Longitude: <span id="lon">Menunggu...</span></p>
-    <p>Status: <span id="status">Menunggu izin lokasi...</span></p>
+    <h1>Realtime GPS Tracker</h1>
+    <div id="status">Menginisialisasi...</div>
+
+    <!-- Tambahkan SDK Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
 
     <script>
-        // Konfigurasi Firebase (Ganti dengan milik Anda)
-         const firebaseConfig = {
+        // Konfigurasi Firebase Anda
+        const firebaseConfig = {
             apiKey: "AIzaSyAm7UYqJxVQE-66N7iw5fF0bwLnV9WHrV8",
             authDomain: "gps-tracking-46fc6.firebaseapp.com",
-            databaseURL: "https://gps-tracking-46fc6-default-rtdb.firebaseio.com",
             projectId: "gps-tracking-46fc6",
-            storageBucket: "gps-tracking-46fc6.appspot.com",
-            messagingSenderId:  "623400729396",
+            storageBucket: "gps-tracking-46fc6.firebasestorage.app",
+            messagingSenderId: "623400729396",
             appId: "1:623400729396:web:2e225550227e1fa1148361"
         };
 
         // Inisialisasi Firebase
-        firebase.initializeApp(firebaseConfig);
+        const app = firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
 
-        function sendLocation() {
-            if (!navigator.geolocation) {
-                document.getElementById("status").textContent = "Geolocation tidak didukung di perangkat ini.";
-                return;
-            }
+        // Referensi database
+        const locationsRef = database.ref('locations');
 
-            navigator.geolocation.watchPosition(position => {
-                let lat = position.coords.latitude;
-                let lon = position.coords.longitude;
-
-                document.getElementById("lat").textContent = lat;
-                document.getElementById("lon").textContent = lon;
-                document.getElementById("status").textContent = "Lokasi diperbarui & dikirim ke Firebase.";
-
-                // Kirim data ke Firebase
-                database.ref("gpsData").set({
-                    latitude: lat,
-                    longitude: lon,
-                    timestamp: Date.now()
-                });
-            }, error => {
-                document.getElementById("status").textContent = "Gagal mendapatkan lokasi! Periksa izin.";
-                console.error("Gagal mendapatkan lokasi:", error.message);
-            }, { enableHighAccuracy: true });
+        // Fungsi update status
+        function updateStatus(message, className) {
+            const statusDiv = document.getElementById('status');
+            statusDiv.textContent = message;
+            statusDiv.className = className;
         }
 
-        // Panggil fungsi untuk mulai mengambil lokasi
-        sendLocation();
+        // Ambil lokasi pengguna
+        function getLocation() {
+            updateStatus("Mengambil lokasi...", "loading");
+            
+            if (navigator.geolocation) {
+                const watchId = navigator.geolocation.watchPosition(
+                    (position) => {
+                        const lat = position.coords.latitude;
+                        const lng = position.coords.longitude;
+                        const timestamp = new Date().toISOString();
+
+                        // Kirim data ke Firebase
+                        locationsRef.push({
+                            latitude: lat,
+                            longitude: lng,
+                            timestamp: timestamp
+                        }).then(() => {
+                            updateStatus(`Lokasi terkirim: ${lat}, ${lng}`, "success");
+                        }).catch((error) => {
+                            updateStatus(`Error mengirim data: ${error}`, "error");
+                        });
+                    },
+                    (error) => {
+                        updateStatus(`Error geolokasi: ${error.message}`, "error");
+                    },
+                    {
+                        enableHighAccuracy: true,
+                        maximumAge: 30000,
+                        timeout: 27000
+                    }
+                );
+            } else {
+                updateStatus("Geolokasi tidak didukung oleh browser ini", "error");
+            }
+        }
+
+        // Mulai saat halaman dimuat
+        window.onload = getLocation;
     </script>
 </body>
 </html>
