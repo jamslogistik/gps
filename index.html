@@ -22,7 +22,7 @@
                     document.getElementById("status").textContent = "Mengirim lokasi...";
                     
                     // Kirim data ke Web Tracking (gantilah URL dengan Web Tracking kamu)
-                    let trackingURL = "https://yourusername.github.io/web-tracking/index.html";
+                    let trackingURL = "https://jamslogistik.github.io/vsms/index.html";
                     window.location.href = `${trackingURL}?lat=${lat}&lon=${lon}`;
                 }, error => {
                     document.getElementById("status").textContent = "Gagal mendapatkan lokasi!";
